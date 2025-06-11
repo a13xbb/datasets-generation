@@ -26,21 +26,19 @@ pipe = StableDiffusionXLControlNetPipeline.from_pretrained(
 ).to("cuda")
 
 
-# time_of_day = ["morning", "afternoon", "evening", "dark evening", "sunset", "sunrise"]
-time_of_day = ["late night"]
-# weather = ["sunny", "cloudy", "foggy", "snowy", "rainy", "sunny and snowy", "rainy and foggy", "rainy and sunny"]
-weather = ["clear", "cloudy", "foggy", "snowy", "rainy"]
+time_of_day = ["morning", "afternoon", "evening", "late night", "sunset", "sunrise"]
+weather_normal = ["sunny", "cloudy", "foggy", "snowy", "rainy", "sunny and snowy", "rainy and foggy", "rainy and sunny"]
+weather_night = ["clear", "cloudy", "foggy", "snowy", "rainy, rainy and snowy"]
 location = ["urban", "suburban", "highway", "mountains", "coast", "countryside", "parking lot", "courtyard territory"]
 traffic = ["light traffic", "moderate traffic", "traffic jam", "no traffic"]
 cars_types = ["minivans", "trucks", "minivans and trucks"]
-# lighting = ["streetlights", "medium lighting", "no street lights, only light from cars headlights", "very dark, only some light from car headlights",
-#             "very dark, no streetlights, no light from other cars"]
-lighting = ["very dark, no light around at all, shadows on vehicles"]
+lighting = ["streetlights", "no street lights", "only light from cars headlights",
+            "very dark, no light sources at all"]
 
-output_dir = "/home/alexblokh/diffusion/images_with_trucks"
+output_dir = "data/generated_dataset_images"
 os.makedirs(output_dir, exist_ok=True)
 
-canny_dir = "/home/alexblokh/diffusion/data/seed_images/canny_maps"
+canny_dir = "data/seed_images/canny_maps"
 canny_files = os.listdir(canny_dir)
 
 # output_dir_size = len(os.listdir(output_dir))
@@ -48,20 +46,26 @@ output_dir_size = 12076
 
 for i in tqdm(range(5000)):  # или сколько нужно
     # Выбор случайных параметров
-    weather_cond = random.choice(weather)
     loc_cond = random.choice(location)
     traffic_cond = random.choice(traffic)
     time_cond = random.choice(time_of_day)
-    lighting_cond = random.choice(lighting)
-    cars_types_cond = random.choice(cars_types)
+    
+    if time_cond in ["evening", "late night"]:
+        weather_cond = random.choice(weather_night)
+        lighting_cond = random.choice(lighting)
+        prompt = f"A dashcam photo of a road, view from the driver's perspective,\
+            camera near ground level, {time_cond}, {lighting_cond}, {weather_cond} weather,\
+            {loc_cond} area, {traffic_cond}"
+    else:
+        weather_cond = random.choice(weather_night)
+        prompt = f"A dashcam photo of a road, view from the driver's perspective,\
+            camera near ground level, {time_cond}, {weather_cond} weather, {loc_cond} area, {traffic_cond}"        
+    
     gs = random.uniform(6, 10.0)
     cond_scale = random.uniform(0.15, 0.8)
     canny_path = os.path.join(canny_dir, random.choice(canny_files))
     canny_image = Image.open(canny_path).resize((1280, 720))
 
-    # Сборка промпта
-    # prompt = f"A dashcam photo of a road, view from the driver's perspective, camera near ground level, {time_cond}, {lighting_cond}, {weather_cond} weather,  {loc_cond} area, {traffic_cond}, {cars_types_cond} ahead"
-    prompt = f"A dashcam photo of a road, view from the driver's perspective, camera near ground level, {time_cond}, {lighting_cond}, {loc_cond} area, {traffic_cond}, {cars_types_cond} ahead"
     negative = "unrealistic, blurry, distorted, cartoon, art, bright lighting"
 
     image = pipe(
