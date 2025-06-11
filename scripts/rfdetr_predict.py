@@ -9,6 +9,10 @@ import cv2
 import os
 import json
 
+'''
+Get RF-DETR predictions in COCO format
+'''
+
 def sorted_by_index(dir_path):
     return sorted(os.listdir(dir_path), key=lambda x: int(os.path.splitext(x)[0].split('_')[-1]))
 
