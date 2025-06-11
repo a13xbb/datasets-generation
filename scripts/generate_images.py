@@ -57,7 +57,7 @@ for i in tqdm(range(5000)):  # или сколько нужно
             camera near ground level, {time_cond}, {lighting_cond}, {weather_cond} weather,\
             {loc_cond} area, {traffic_cond}"
     else:
-        weather_cond = random.choice(weather_night)
+        weather_cond = random.choice(weather_normal)
         prompt = f"A dashcam photo of a road, view from the driver's perspective,\
             camera near ground level, {time_cond}, {weather_cond} weather, {loc_cond} area, {traffic_cond}"        
     
