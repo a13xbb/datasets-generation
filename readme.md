@@ -18,7 +18,7 @@ If you want to generate some custom images for another domain, prompt and random
 1) Clone GroundingDINO github repository into "GroundingDINO" folder following all instruction from their repo: https://github.com/IDEA-Research/GroundingDINO
 2) Run annotation script using following command:
 ```bash
-python script.py \
+python GroundingDINO/annotate_images.py \
   --images_dir [path_to_images] \
   --labels_dir [path_to_labels] \
   --prompt "car . truck" \
