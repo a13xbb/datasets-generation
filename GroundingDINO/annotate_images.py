@@ -4,29 +4,45 @@ import os
 from tqdm import tqdm
 import numpy as np
 import torch
+import argparse
 
 '''
 Annotates images using Grounding DINO, saves annotations win YOLO format
 and saves images with overlays
 '''
 
+parser = argparse.ArgumentParser(description='Annotate images for object detection task using GroundingDINO.')
+parser.add_argument('-id', '--images_dir', type=str, required=True,
+                        help='Directory with images to annotate')
+parser.add_argument('-ld', '--labels_dir', type=str, required=True,
+                        help='Directory to save labels')
+parser.add_argument('-p', '--prompt', type=str, required=False, default='car . truck',
+                        help='Text prompt with objects to detect, objects can be separated with dot')
+parser.add_argument('-bt', '--box_threshold', type=float, required=False, default=0.35,
+                        help='Bbox confidence threshold')
+parser.add_argument('-tt', '--text_threshold', type=float, required=False, default=0.35,
+                        help='Text confidence threshold')
+
+
+args = parser.parse_args()
+
 # model = load_model("groundingdino/config/GroundingDINO_SwinT_OGC.py", "weights/groundingdino_swinb_cogcoor.pth")
 model = load_model("/home/alexblokh/diffusion/GroundingDINO/groundingdino/config/GroundingDINO_SwinB_cfg.py",
                    "/home/alexblokh/diffusion/GroundingDINO/weights/groundingdino_swinb_cogcoor.pth")
-IMAGES_PATH = "/home/alexblokh/diffusion/generated_dataset/images"
-LABELS_PATH = "/home/alexblokh/diffusion/generated_dataset/labels"
-ANNOTATED_IMAGES_PATH = "/home/alexblokh/diffusion/generated_dataset/annotated_images"
-TEXT_PROMPT = "car . truck"
-BOX_TRESHOLD = 0.35
-TEXT_TRESHOLD = 0.35
+IMAGES_PATH = args.images_dir
+LABELS_PATH = args.labels_dir
+TEXT_PROMPT = args.prompt
+BOX_THRESHOLD = args.box_threshold
+TEXT_THRESHOLD = args.text_threshold
 
 if not os.path.exists(LABELS_PATH):
     os.mkdir(LABELS_PATH)
 
-if not os.path.exists(ANNOTATED_IMAGES_PATH):
-    os.mkdir(ANNOTATED_IMAGES_PATH)
+classes = TEXT_PROMPT.split(' . ')
 
-cls_mapping = {'car' : 0, 'truck': 1}
+cls_mapping = {}
+for idx, label in enumerate(classes):
+    cls_mapping[label] = idx
 
 images_dir = os.listdir(IMAGES_PATH)
 
@@ -39,8 +55,8 @@ for filename in tqdm(images_dir):
         model=model,
         image=image,
         caption=TEXT_PROMPT,
-        box_threshold=BOX_TRESHOLD,
-        text_threshold=TEXT_TRESHOLD
+        box_threshold=BOX_THRESHOLD,
+        text_threshold=TEXT_THRESHOLD
     )
 
     filtered_boxes = []
@@ -51,10 +67,7 @@ for filename in tqdm(images_dir):
             box = boxes[i]
             conf = logits[i]
             if phrases[i] not in list(cls_mapping.keys()):
-                if 'car' in phrases[i]:
-                    phrases[i] = 'car'
-                else:
-                    continue
+                continue
             label = cls_mapping[phrases[i]]
             cx, cy, w, h = box
             if w > 0.85 or h > 0.85:
@@ -63,18 +76,3 @@ for filename in tqdm(images_dir):
             filtered_conf.append(conf.tolist())
             filtered_labels.append(label)
             fout.write(f"{label} {cx} {cy} {w} {h}\n")
-
-    if len(filtered_boxes) == 0:
-        cv2.imwrite(os.path.join(ANNOTATED_IMAGES_PATH, filename), image_source)
-        continue
-
-    filtered_boxes = torch.tensor(filtered_boxes)
-    filtered_conf = torch.tensor(filtered_conf)
-
-    annotated_frame = annotate(image_source=image_source, boxes=filtered_boxes,
-                                logits=filtered_conf, phrases=filtered_labels)
-    cv2.imwrite(os.path.join(ANNOTATED_IMAGES_PATH, filename), annotated_frame)
-
-    # print(boxes)
-    # print(filtered_boxes)
-    # exit(0)

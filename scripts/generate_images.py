@@ -8,10 +8,24 @@ from PIL import Image
 from tqdm import tqdm
 import os
 import random
+import argparse
 
 '''
-Script to generate images using JuggernautXLv9 and Canny Controlnet
+Script to generate images using JuggernautXLv9 and Canny Controlnet,
+GPU with 8-12GB VRAM is required
 '''
+
+parser = argparse.ArgumentParser(description='Generate images.')
+parser.add_argument('-cd', '--canny_dir', type=str, required=True,
+                        help='Directory containing Canny edge maps')
+parser.add_argument('-sd', '--save_dir', type=str, required=True,
+                        help='Directory to save generated images')
+parser.add_argument('-n', '--n_images', type=int, required=True,
+                        help='Amount of images to be generated')
+
+args = parser.parse_args()
+
+os.makedirs(args.save_dir, exist_ok=True)
 
 controlnet = ControlNetModel.from_pretrained(
     "diffusers/controlnet-canny-sdxl-1.0",
@@ -35,16 +49,11 @@ cars_types = ["minivans", "trucks", "minivans and trucks"]
 lighting = ["streetlights", "no street lights", "only light from cars headlights",
             "very dark, no light sources at all"]
 
-output_dir = "data/generated_dataset_images"
-os.makedirs(output_dir, exist_ok=True)
+canny_files = os.listdir(args.canny_dir)
 
-canny_dir = "data/seed_images/canny_maps"
-canny_files = os.listdir(canny_dir)
+output_dir_size = len(os.listdir(args.save_dir))
 
-# output_dir_size = len(os.listdir(output_dir))
-output_dir_size = 12076
-
-for i in tqdm(range(5000)):  # или сколько нужно
+for i in tqdm(range(args.n_images)):  # или сколько нужно
     # Выбор случайных параметров
     loc_cond = random.choice(location)
     traffic_cond = random.choice(traffic)
@@ -63,7 +72,7 @@ for i in tqdm(range(5000)):  # или сколько нужно
     
     gs = random.uniform(6, 10.0)
     cond_scale = random.uniform(0.15, 0.8)
-    canny_path = os.path.join(canny_dir, random.choice(canny_files))
+    canny_path = os.path.join(args.canny_dir, random.choice(canny_files))
     canny_image = Image.open(canny_path).resize((1280, 720))
 
     negative = "unrealistic, blurry, distorted, cartoon, art, bright lighting"
@@ -79,4 +88,4 @@ for i in tqdm(range(5000)):  # или сколько нужно
         controlnet_conditioning_scale=cond_scale
     ).images[0]
 
-    image.save(f"{output_dir}/img_{i + output_dir_size}.png")
+    image.save(f"{args.save_dir}/img_{i + output_dir_size}.png")
