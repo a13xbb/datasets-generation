@@ -1,6 +1,6 @@
 # Two-stage datasets generation pipeline
 Pipeline generates images and then annotates them using JuggernautXL + ControlNet for generation ad GroundingDINO for annotation for detection task.<br>
-You can run this pipeline to create road scenes dataset for detection task, if you want to specify some generation details you will need to change the prompt and it's random conditions in generation script. Other options like objects to annotate and annotation models threshold can be specified using scripts parameters.
+You can run this pipeline to create road scenes dataset for detection task, if you want to specify some generation details you will need to change the prompt and it's random conditions in generation script. Other options like objects to annotate and annotation model thresholds can be specified using scripts parameters.
 All experiments including visualization in ipynb notebook were done using BDD100k dataset as a real data.
 
 ## 1. Get Canny edge maps from seed images for generation
